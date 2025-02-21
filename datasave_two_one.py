@@ -22,17 +22,17 @@ with open(filename, 'w', newline='') as csvfile:
             if line:
                 parts = line.split(',')  # **按逗号分割数据**
                 
-                if len(parts) == 9:  # **确保数据完整（时间戳 + 8 个传感器数据）**
+                if len(parts) == 8:  # **确保数据完整（时间戳 + 8 个传感器数据）**
                     try:
-                        time_ms = float(parts[0].strip())  # **时间戳（浮点数）**
-                        emg1_value = int(parts[1].strip())  # **第 1 个 EMG**
-                        emg2_value = int(parts[2].strip())  # **第 2 个 EMG**
-                        acc_x = int(parts[3].strip())
-                        acc_y = int(parts[4].strip())
-                        acc_z = int(parts[5].strip())
-                        gyro_x = int(parts[6].strip())
-                        gyro_y = int(parts[7].strip())
-                        gyro_z = int(parts[8].strip())
+                        # time_ms = float(parts[0].strip())  # **时间戳（浮点数）**
+                        emg1_value = int(parts[0].strip())  # **第 1 个 EMG**
+                        emg2_value = int(parts[0].strip())  # **第 2 个 EMG**
+                        acc_x = int(parts[2].strip())
+                        acc_y = int(parts[3].strip())
+                        acc_z = int(parts[4].strip())
+                        gyro_x = int(parts[5].strip())
+                        gyro_y = int(parts[6].strip())
+                        gyro_z = int(parts[7].strip())
 
                         elapsed_time = (datetime.now() - start_time).total_seconds() * 1000  # **计算相对时间 (ms)**
 
