@@ -3,7 +3,7 @@ import csv
 from datetime import datetime
 
 # Configure the serial port
-ser = serial.Serial('COM4', 115200, timeout=1)
+ser = serial.Serial('COM7', 115200, timeout=1)
 
 # Generate CSV filename
 filename = f"sensor_data_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv"
