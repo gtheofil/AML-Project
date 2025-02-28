@@ -20,13 +20,13 @@ with open(filename, 'w', newline='') as csvfile:
             # **读取串口数据**
             line = ser.readline().decode('utf-8', errors='ignore').strip()
             if line:
-                parts = line.split(',')  # **按逗号分割数据**
+                parts = line.split(' ')  # **按逗号分割数据**
                 
                 if len(parts) == 8:  # **确保数据完整（时间戳 + 8 个传感器数据）**
                     try:
                         # time_ms = float(parts[0].strip())  # **时间戳（浮点数）**
                         emg1_value = int(parts[0].strip())  # **第 1 个 EMG**
-                        emg2_value = int(parts[0].strip())  # **第 2 个 EMG**
+                        emg2_value = int(parts[1].strip())  # **第 2 个 EMG**
                         acc_x = int(parts[2].strip())
                         acc_y = int(parts[3].strip())
                         acc_z = int(parts[4].strip())
