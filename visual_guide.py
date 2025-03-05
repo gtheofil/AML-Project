@@ -8,7 +8,7 @@ import numpy as np
 # 指定图片文件夹路径
 image_folder = r"alpha"
 path = r"data\G"
-os.makedirs(path)
+os.makedirs(path, exist_ok=True)
 excel_file = r"data\G\shuffle_order.xlsx"  # 结果存储 Excel
 
 # 获取所有 PNG 图片文件
@@ -39,6 +39,7 @@ df = pd.concat([df, new_row], ignore_index=True)
 
 # 保存到 Excel
 df.to_excel(excel_file, index=False, engine='openpyxl')
+i = 0
 
 # 显示图片
 for image_file in shuffled_images:
@@ -54,25 +55,31 @@ for image_file in shuffled_images:
             alpha = alpha[:, :, np.newaxis] / 255.0
             img = (bgr * alpha + white_bg * (1 - alpha)).astype(np.uint8)
         
-        # 复制图片用于准备阶段显示文字
-        prep_img = img.copy()
         letter = image_file.split(".")[0]
-        cv2.putText(prep_img, f"Prepare for {letter}", (50, 50), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
-        
-        cv2.imshow("Image", prep_img)
         print(f"准备阶段: {image_file}, 标签: {image_map[image_file]}")
-        cv2.waitKey(4000)  # 显示 4 秒的准备阶段
+        start_time = time.time()
         
-        for countdown in range(6, 0, -1):
+        # 准备阶段 5 秒
+        for countdown in range(5, 0, -1):
+            prep_img = img.copy()
+            cv2.putText(prep_img, f"Prepare for {letter}, No.{i+1}", (50, 50), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
+            cv2.putText(prep_img, str(countdown), (100, 100), cv2.FONT_HERSHEY_SIMPLEX, 2, (0, 0, 255), 3)
+            cv2.imshow("Image", prep_img)
+            elapsed = time.time() - start_time
+            cv2.waitKey(max(1, int((5 - elapsed) * 1000 / (countdown))))  # 保证每秒更新一次
+        
+        i += 1
+        start_time = time.time()
+        
+        # 显示阶段 5 秒
+        for countdown in range(5, 0, -1):
             countdown_img = img.copy()
             cv2.putText(countdown_img, "GO", (50, 50), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
             cv2.putText(countdown_img, str(countdown), (100, 100), cv2.FONT_HERSHEY_SIMPLEX, 2, (0, 255, 0), 3)
             cv2.imshow("Image", countdown_img)
-            print(f"倒计时: {countdown}")
-            cv2.waitKey(1000)  # 每秒更新一次倒计时
+            elapsed = time.time() - start_time
+            cv2.waitKey(max(1, int((5 - elapsed) * 1000 / (countdown))) )# 保证每秒更新一次
         
         cv2.destroyAllWindows()
     else:
         print(f"无法打开图片: {image_file}")
-
-    time.sleep(1)  # 稍作停顿，避免闪屏
