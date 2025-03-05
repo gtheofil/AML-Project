@@ -7,7 +7,7 @@ from datetime import datetime
 ser = serial.Serial('COM4', 115200, timeout=1)
 
 # 创建数据文件夹
-data_dir = "data"
+data_dir = r"data\G"
 os.makedirs(data_dir, exist_ok=True)
 
 # 找到最新的文件编号
