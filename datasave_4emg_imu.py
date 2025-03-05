@@ -1,6 +1,7 @@
 import os
 import serial
 import csv
+import re
 from datetime import datetime
 
 # 配置串口
@@ -12,11 +13,20 @@ os.makedirs(data_dir, exist_ok=True)
 
 # 找到最新的文件编号
 existing_files = [f for f in os.listdir(data_dir) if f.startswith("sensor_data") and f.endswith(".csv")]
-file_numbers = [int(f[12:-4]) for f in existing_files if f[12:-4].isdigit()]
+
+# 使用正则表达式提取 sensor_data 后面的数字
+file_numbers = []
+for f in existing_files:
+    match = re.search(r"sensor_data(\d+)\.csv", f)  # 匹配 sensor_data 后的数字
+    if match:
+        file_numbers.append(int(match.group(1)))  # 提取数值部分
+
+# 计算下一个文件编号
 next_file_number = max(file_numbers, default=0) + 1
 
 # 生成新的 CSV 文件名
 filename = os.path.join(data_dir, f"sensor_data{next_file_number}.csv")
+print(f"新文件名: {filename}")
 
 with open(filename, 'w', newline='') as csvfile:
     writer = csv.writer(csvfile)
@@ -42,7 +52,7 @@ with open(filename, 'w', newline='') as csvfile:
 
                         # 打印到控制台
                         print(f"Time: {elapsed_time:.2f} ms, EMG: {emg_values}, Acc: {imu_values[:3]}, Gyro: {imu_values[3:]}")
-                    
+
                     except ValueError:
                         print(f"无效数据: {line}")  # 处理非整数值
     except KeyboardInterrupt:
