@@ -6,8 +6,13 @@ import pandas as pd
 import numpy as np
 
 # 指定图片文件夹路径
+<<<<<<< HEAD
 image_folder = r"E:\MSC\Spring\AML\GestureLink\alpha"
 excel_file = r"E:\MSC\Spring\AML\GestureLink\data\shuffle_order.xlsx"  # 结果存储 Excel
+=======
+image_folder = r"alpha"
+excel_file = "shuffle_order.xlsx"  # 结果存储 Excel
+>>>>>>> 7f20dddba8c6fa2856bd89a0d8f2a5461d66a374
 
 # 获取所有 PNG 图片文件
 image_files = [f for f in os.listdir(image_folder) if f.endswith(".png")]
