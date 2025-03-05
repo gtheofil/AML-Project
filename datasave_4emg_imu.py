@@ -1,17 +1,27 @@
+import os
 import serial
 import csv
 from datetime import datetime
 
-# Configure the serial port
+# 配置串口
 ser = serial.Serial('COM4', 115200, timeout=1)
 
-# Generate CSV filename
-filename = f"sensor_data_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv"
+# 创建数据文件夹
+data_dir = "data"
+os.makedirs(data_dir, exist_ok=True)
+
+# 找到最新的文件编号
+existing_files = [f for f in os.listdir(data_dir) if f.startswith("sensor_data") and f.endswith(".csv")]
+file_numbers = [int(f[12:-4]) for f in existing_files if f[12:-4].isdigit()]
+next_file_number = max(file_numbers, default=0) + 1
+
+# 生成新的 CSV 文件名
+filename = os.path.join(data_dir, f"sensor_data{next_file_number}.csv")
 
 with open(filename, 'w', newline='') as csvfile:
     writer = csv.writer(csvfile)
-    # Write CSV header
-    writer.writerow(["Time (ms)", "EMG1", "EMG2","EMG3","EMG4","AccX", "AccY", "AccZ", "GyroX", "GyroY", "GyroZ"])
+    # 写入 CSV 头部
+    writer.writerow(["Time (ms)", "EMG1", "EMG2", "EMG3", "EMG4", "AccX", "AccY", "AccZ", "GyroX", "GyroY", "GyroZ"])
 
     start_time = datetime.now()
 
@@ -19,31 +29,23 @@ with open(filename, 'w', newline='') as csvfile:
         while True:
             line = ser.readline().decode('utf-8', errors='ignore').strip()
             if line:
-                parts = line.split()  # Split data by spaces
-                if len(parts) == 10:  # Ensure correct data format (EMG + 6 IMU values)
+                parts = line.split()  # 以空格分割数据
+                if len(parts) == 10:  # 确保数据格式正确
                     try:
-                        emg_value1 = int(parts[0])  # First value is EMG
-                        emg_value2 = int(parts[1])
-                        emg_value3 = int(parts[2])
-                        emg_value4 = int(parts[3])
-                        acc_x = int(parts[4])
-                        acc_y = int(parts[5])
-                        acc_z = int(parts[6])
-                        gyro_x = int(parts[7])
-                        gyro_y = int(parts[8])
-                        gyro_z = int(parts[9])
+                        emg_values = list(map(int, parts[:4]))  # 解析 EMG 数据
+                        imu_values = list(map(int, parts[4:]))  # 解析 IMU 数据
                         
-                        elapsed_time = (datetime.now() - start_time).total_seconds() * 1000  # Time in ms
+                        elapsed_time = (datetime.now() - start_time).total_seconds() * 1000  # 计算时间（毫秒）
 
-                        # Write data to CSV
-                        writer.writerow([elapsed_time, emg_value1, emg_value2, emg_value3, emg_value4, acc_x, acc_y, acc_z, gyro_x, gyro_y, gyro_z])
+                        # 写入 CSV 文件
+                        writer.writerow([elapsed_time] + emg_values + imu_values)
 
-                        # Print to console
-                        print(f"Time: {elapsed_time:.2f} ms, EMG1: {emg_value1}, EMG2: {emg_value2},EMG3: {emg_value3}, EMG4: {emg_value4}, AccX: {acc_x}, AccY: {acc_y}, AccZ: {acc_z}, GyroX: {gyro_x}, GyroY: {gyro_y}, GyroZ: {gyro_z}")
+                        # 打印到控制台
+                        print(f"Time: {elapsed_time:.2f} ms, EMG: {emg_values}, Acc: {imu_values[:3]}, Gyro: {imu_values[3:]}")
                     
                     except ValueError:
-                        print(f"Invalid data received: {line}")  # Handle non-integer values
+                        print(f"无效数据: {line}")  # 处理非整数值
     except KeyboardInterrupt:
-        print("\nData collection stopped by user.")
+        print("\n数据采集已停止。")
     finally:
-        ser.close()  # Close the serial port safely
+        ser.close()  # 安全关闭串口
