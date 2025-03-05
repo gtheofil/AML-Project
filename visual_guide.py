@@ -6,7 +6,7 @@ import pandas as pd
 import numpy as np
 
 # 指定图片文件夹路径
-image_folder = r"E:\MSC\Spring\AML\GestureLink\alpha"
+image_folder = r"alpha"
 excel_file = "shuffle_order.xlsx"  # 结果存储 Excel
 
 # 获取所有 PNG 图片文件
