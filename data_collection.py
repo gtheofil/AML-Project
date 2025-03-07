@@ -145,3 +145,4 @@ if __name__ == '__main__':
     process1.join()
 
     print("[INFO] All processes have safely exited")
+# End of data_collection.py
