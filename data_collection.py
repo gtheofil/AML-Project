@@ -11,6 +11,9 @@ from datetime import datetime
 from multiprocessing import Process, Event, Manager, freeze_support
 import threading
 
+
+
+
 def record_sensor_data(data_buffer, stop_event, recording_enabled, filename, serial_port, baud_rate):
     """ Collect EMG and IMU data when recording is enabled. """
     ser = serial.Serial(serial_port, baud_rate, timeout=1)
@@ -54,7 +57,12 @@ def run_visual_guidance(data_buffer, stop_event, recording_enabled, filename):
     image_folder = r"alpha"
     image_files = [f for f in os.listdir(image_folder) if f.endswith(".png")]
     shuffled_images = random.sample(image_files, 26)  # Shuffle images len(image_files)
+<<<<<<< HEAD
 
+=======
+    # shuffled_images = random.sample(image_files, 2)  
+    i = 0
+>>>>>>> 97d149c6e66254af2244626e4bb217f853c5fa9a
     for image_file in shuffled_images:
         if stop_event.is_set():
             break
@@ -73,10 +81,10 @@ def run_visual_guidance(data_buffer, stop_event, recording_enabled, filename):
             if stop_event.is_set():
                 return
             img_copy = img.copy()
-            cv2.putText(img_copy, f"Prepare: {countdown}", (50, 50), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
+            cv2.putText(img_copy, f"Prepare: {countdown}, No.{i}", (50, 50), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
             cv2.imshow("Visual Guidance", img_copy)
             cv2.waitKey(1000)
-
+        i+=1
         # **GO STAGE (Start recording)**
         print(f"[INFO] Entering GO stage: {image_file}")
         recording_enabled.set()
@@ -115,7 +123,7 @@ if __name__ == '__main__':
     stop_event = Event()
     recording_enabled = Event()
     
-    SERIAL_PORT = 'COM3'  # Ensure this is correct
+    SERIAL_PORT = 'COM4'  # Ensure this is correct
     BAUD_RATE = 115200
 
     data_dir = r"data\FZH"
@@ -141,3 +149,4 @@ if __name__ == '__main__':
     process1.join()
 
     print("[INFO] All processes have safely exited")
+# End of data_collection.py
