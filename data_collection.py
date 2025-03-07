@@ -57,7 +57,8 @@ def run_visual_guidance(data_buffer, stop_event, recording_enabled, filename):
     image_folder = r"alpha"
     image_files = [f for f in os.listdir(image_folder) if f.endswith(".png")]
     shuffled_images = random.sample(image_files, 26)  # Shuffle images len(image_files)
-
+    # shuffled_images = random.sample(image_files, 2)  
+    i = 0
     for image_file in shuffled_images:
         if stop_event.is_set():
             break
@@ -76,10 +77,10 @@ def run_visual_guidance(data_buffer, stop_event, recording_enabled, filename):
             if stop_event.is_set():
                 return
             img_copy = img.copy()
-            cv2.putText(img_copy, f"Prepare: {countdown}", (50, 50), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
+            cv2.putText(img_copy, f"Prepare: {countdown}, No.{i}", (50, 50), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
             cv2.imshow("Visual Guidance", img_copy)
             cv2.waitKey(1000)
-
+        i+=1
         # **GO STAGE (Start recording)**
         print(f"[INFO] Entering GO stage: {image_file}")
         recording_enabled.set()
