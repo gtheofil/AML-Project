@@ -51,18 +51,34 @@ def record_sensor_data(data_buffer, stop_event, recording_enabled, filename, ser
             ser.close()
             print("[INFO] Serial port closed")
 
-def run_visual_guidance(data_buffer, stop_event, recording_enabled, filename):
+def run_visual_guidance(data_buffer, stop_event, recording_enabled, filename, root):
     """ Run the visual guidance, controlling when sensor data is collected """
 
     image_folder = r"alpha"
     image_files = [f for f in os.listdir(image_folder) if f.endswith(".png")]
-    shuffled_images = random.sample(image_files, 26)  # Shuffle images len(image_files)
-<<<<<<< HEAD
+    label_dict = {chr(i + 65): i + 1 for i in range(26)}  # 65 是 'A' 的 ASCII 值
+    excel_file = os.path.join(root,"shuffle_order.xlsx")
+    # excel_file = r"data\FZH\shuffle_order.xlsx"  # 结果存储 Excel
+    image_map = {file: label_dict[file.split(".")[0]] for file in image_files if file.split(".")[0] in label_dict}
 
-=======
+    shuffled_images = random.sample(image_files, 26)  # Shuffle images len(image_files)
     # shuffled_images = random.sample(image_files, 2)  
+    shuffled_labels = [image_map[file] for file in shuffled_images]
+
+    # 读取或创建 Excel 文件
+    if os.path.exists(excel_file):
+        df = pd.read_excel(excel_file, engine='openpyxl')  # 需要 `openpyxl`
+    else:
+        df = pd.DataFrame()
+
+    # 使用 `pd.concat()` 代替 `df.append()`
+    new_row = pd.DataFrame([shuffled_labels])  # 新的一行数据
+    df = pd.concat([df, new_row], ignore_index=True)
+
+    # 保存到 Excel
+    df.to_excel(excel_file, index=False, engine='openpyxl')
+
     i = 0
->>>>>>> 97d149c6e66254af2244626e4bb217f853c5fa9a
     for image_file in shuffled_images:
         if stop_event.is_set():
             break
@@ -141,7 +157,7 @@ if __name__ == '__main__':
     )
     process1.start()
 
-    run_visual_guidance(data_buffer, stop_event, recording_enabled, filename)  # **Run in the main thread**
+    run_visual_guidance(data_buffer, stop_event, recording_enabled, filename, data_dir)  # **Run in the main thread**
 
     # **Ensure everything stops when visual guidance ends**
     stop_event.set()
