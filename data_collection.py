@@ -22,7 +22,11 @@ BAUD_RATE = 115200
 
 def record_sensor_data():
     """ 采集 EMG 和 IMU 数据，直到 `stop_event` 触发 """
-    ser = serial.Serial(SERIAL_PORT, BAUD_RATE, timeout=1)
+    try:
+        ser = serial.Serial(SERIAL_PORT, BAUD_RATE, timeout=1)
+    except serial.SerialException:
+        print("[ERROR] 无法打开串口，请检查设备连接！")
+        return
 
     # 确保文件夹存在
     data_dir = r"data\FZH"
@@ -44,9 +48,9 @@ def record_sensor_data():
         writer.writerow(["Time (ms)", "EMG1", "EMG2", "EMG3", "EMG4", "AccX", "AccY", "AccZ", "GyroX", "GyroY", "GyroZ"])
 
         start_time = datetime.now()
+        data_count = 0  # 计数器，确保数据被写入
 
         try:
-            data_count = 0  # 计数器，确保数据被写入
             while not stop_event.is_set():
                 line = ser.readline().decode('utf-8', errors='ignore').strip()
                 if line:
@@ -68,6 +72,8 @@ def record_sensor_data():
 
                         except ValueError:
                             print(f"[WARNING] 无效数据: {line}")  # 处理非整数值
+                else:
+                    print("[WARNING] 串口未接收到数据，请检查设备！")
 
             print(f"[INFO] 采集结束，已存储 {data_count} 行数据")
 
@@ -77,7 +83,6 @@ def record_sensor_data():
         finally:
             ser.close()
             print("[INFO] 串口已关闭")
-
 
 
 def run_visual_guidance():
@@ -91,7 +96,7 @@ def run_visual_guidance():
     image_files = [f for f in os.listdir(image_folder) if f.endswith(".png")]
 
     # 生成标签映射 (A->1, B->2, ..., Z->26)
-    label_dict = {chr(i + 65): i + 1 for i in range(2)}  # 'A' -> 1, ..., 'Z' -> 26
+    label_dict = {chr(i + 65): i + 1 for i in range(1)}  # 'A' -> 1, ..., 'Z' -> 26
 
     # 过滤并映射文件名
     image_map = {file: label_dict[file.split(".")[0]] for file in image_files if file.split(".")[0] in label_dict}
@@ -100,20 +105,7 @@ def run_visual_guidance():
     shuffled_images = list(image_map.keys())
     random.shuffle(shuffled_images)
 
-    # 获取对应的数字顺序
-    shuffled_labels = [image_map[file] for file in shuffled_images]
-
-    # 读取或创建 Excel 文件
-    if os.path.exists(excel_file):
-        df = pd.read_excel(excel_file, engine='openpyxl')  # 需要 `openpyxl`
-    else:
-        df = pd.DataFrame()
-
-    # 记录新的顺序
-    new_row = pd.DataFrame([shuffled_labels])  # 新的一行数据
-    df = pd.concat([df, new_row], ignore_index=True)
-    df.to_excel(excel_file, index=False, engine='openpyxl')
-
+    # **OpenCV 显示主循环**
     for i, image_file in enumerate(shuffled_images):
         if stop_event.is_set():
             break
@@ -126,30 +118,21 @@ def run_visual_guidance():
             letter = image_file.split(".")[0]
             print(f"[INFO] 进入准备阶段: {letter}, 标签: {image_map[image_file]}")
 
-            # **5秒准备阶段**
+            # **倒计时**
             for countdown in range(5, 0, -1):
                 if stop_event.is_set():
                     break
-                img_copy = img.copy()  # **每次创建新副本，防止数字重叠**
-                cv2.putText(img_copy, f"Prepare: {countdown}", (50, 50), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
+                img_copy = img.copy()
+                cv2.putText(img_copy, f"Prepare: {countdown}", (50, 100), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
                 cv2.imshow("Visual Guidance", img_copy)
                 cv2.waitKey(1000)
 
-            # **5秒显示阶段**
-            for countdown in range(5, 0, -1):
-                if stop_event.is_set():
-                    break
-                img_copy = img.copy()  # **再次创建副本，防止数字重叠**
-                cv2.putText(img_copy, f"GO: {countdown}", (50, 50), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
-                cv2.imshow("Visual Guidance", img_copy)
-                cv2.waitKey(1000)
-
-            cv2.destroyAllWindows()
         else:
             print(f"[WARNING] 无法打开图片: {image_file}")
 
     print("\n[INFO] 视觉指导结束，停止数据采集")
-    stop_event.set()  # 触发事件，停止采集进程
+    stop_event.set()
+    cv2.destroyAllWindows()
 
 
 def monitor_keyboard():
@@ -175,14 +158,10 @@ if __name__ == "__main__":
     keyboard_thread = threading.Thread(target=monitor_keyboard)
     keyboard_thread.start()
 
-    # 等待视觉指导结束
+    # **等待视觉指导结束**
     visual_thread.join()
-
-    # **等待数据采集进程完成后再退出**
     stop_event.set()
-    process1.join()  # **确保数据完全写入 CSV**
-    keyboard_thread.join()  # 停止键盘监听
+    process1.join()  # **等待数据写入**
+    keyboard_thread.join()
 
     print("[INFO] 所有进程已安全退出")
-
-#afasfasfas
