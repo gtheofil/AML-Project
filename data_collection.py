@@ -53,7 +53,7 @@ def run_visual_guidance(data_buffer, stop_event, recording_enabled, filename):
 
     image_folder = r"alpha"
     image_files = [f for f in os.listdir(image_folder) if f.endswith(".png")]
-    shuffled_images = random.sample(image_files, 2)  # Shuffle images len(image_files)
+    shuffled_images = random.sample(image_files, 26)  # Shuffle images len(image_files)
 
     for image_file in shuffled_images:
         if stop_event.is_set():
