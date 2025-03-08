@@ -17,7 +17,7 @@ import threading
 def record_sensor_data(data_buffer, stop_event, recording_enabled, filename, serial_port, baud_rate):
     """ Collect EMG and IMU data when recording is enabled. """
     ser = serial.Serial(serial_port, baud_rate, timeout=1)
-
+    print(filename)
     with open(filename, 'w', newline='') as csvfile:
         writer = csv.writer(csvfile)
         writer.writerow(["Time (ms)", "EMG1", "EMG2", "EMG3", "EMG4", "AccX", "AccY", "AccZ", "GyroX", "GyroY", "GyroZ"])
@@ -38,6 +38,7 @@ def record_sensor_data(data_buffer, stop_event, recording_enabled, filename, ser
                             if recording_enabled.is_set():
                                 # print("[INFO] Recording data...")
                                 data_buffer.append([elapsed_time] + emg_values + imu_values)
+
 
                         except ValueError:
                             print(f"[WARNING] Invalid data: {line}")
@@ -142,7 +143,7 @@ if __name__ == '__main__':
     SERIAL_PORT = 'COM4'  # Ensure this is correct
     BAUD_RATE = 115200
 
-    data_dir = r"data\WXR"
+    data_dir = r"data\GZA"
     os.makedirs(data_dir, exist_ok=True)
 
     existing_files = [f for f in os.listdir(data_dir) if f.startswith("sensor_data") and f.endswith(".csv")]
