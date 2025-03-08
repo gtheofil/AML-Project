@@ -142,7 +142,7 @@ if __name__ == '__main__':
     SERIAL_PORT = 'COM4'  # Ensure this is correct
     BAUD_RATE = 115200
 
-    data_dir = r"data\FZH"
+    data_dir = r"data\WXR"
     os.makedirs(data_dir, exist_ok=True)
 
     existing_files = [f for f in os.listdir(data_dir) if f.startswith("sensor_data") and f.endswith(".csv")]
