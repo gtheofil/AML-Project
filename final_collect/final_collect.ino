@@ -1,13 +1,11 @@
 #include <TimerOne.h>
 #include <Wire.h>
 
-// MPU6050 I2C addresses
-const int MPU6050_addr1 = 0x68; // GND left
-const int MPU6050_addr2 = 0x69; //3.3 V right hand
+// MPU6050 I2C address
+const int MPU6050_addr = 0x69;
 
 // IMU sensor data
-volatile int16_t AccX1, AccY1, AccZ1, GyroX1, GyroY1, GyroZ1;
-volatile int16_t AccX2, AccY2, AccZ2, GyroX2, GyroY2, GyroZ2;
+volatile int16_t AccX, AccY, AccZ, GyroX, GyroY, GyroZ;
 
 // EMG data
 volatile int emgValue1 = 0;
@@ -26,37 +24,10 @@ void sampleData() {
   emgValue4 = analogRead(A3);
 
   // Read IMU data
-  readMPU6050(MPU6050_addr1, AccX1, AccY1, AccZ1, GyroX1, GyroY1, GyroZ1);
-  readMPU6050(MPU6050_addr2, AccX2, AccY2, AccZ2, GyroX2, GyroY2, GyroZ2);
-
-  dataReadyFlag = true;
-}
-
-void setup() {
-  Serial.begin(115200);
-  Wire.begin();
-
-  // Initialize both MPU6050 sensors
-  Wire.beginTransmission(MPU6050_addr1);
-  Wire.write(0x6B);
-  Wire.write(0);
-  Wire.endTransmission(true);
-
-  Wire.beginTransmission(MPU6050_addr2);
-  Wire.write(0x6B);
-  Wire.write(0);
-  Wire.endTransmission(true);
-
-  // Set Timer1 for 200 Hz (5000 µs interval)
-  Timer1.initialize(5000);
-  Timer1.attachInterrupt(sampleData);
-}
-
-void readMPU6050(int addr, int16_t &AccX, int16_t &AccY, int16_t &AccZ, int16_t &GyroX, int16_t &GyroY, int16_t &GyroZ) {
-  Wire.beginTransmission(addr);
+  Wire.beginTransmission(MPU6050_addr);
   Wire.write(0x3B);
   Wire.endTransmission(false);
-  Wire.requestFrom(addr, 14, true);
+  Wire.requestFrom(MPU6050_addr, 14, true);
 
   AccX = Wire.read() << 8 | Wire.read();
   AccY = Wire.read() << 8 | Wire.read();
@@ -65,6 +36,23 @@ void readMPU6050(int addr, int16_t &AccX, int16_t &AccY, int16_t &AccZ, int16_t 
   GyroX = Wire.read() << 8 | Wire.read();
   GyroY = Wire.read() << 8 | Wire.read();
   GyroZ = Wire.read() << 8 | Wire.read();
+
+  dataReadyFlag = true;
+}
+
+void setup() {
+  Serial.begin(115200);
+  Wire.begin();
+
+  // Initialize MPU6050
+  Wire.beginTransmission(MPU6050_addr);
+  Wire.write(0x6B);
+  Wire.write(0);
+  Wire.endTransmission(true);
+
+  // Set Timer1 for 200 Hz (5000 µs interval)
+  Timer1.initialize(5000);
+  Timer1.attachInterrupt(sampleData);
 }
 
 void loop() {
@@ -81,17 +69,11 @@ void loop() {
     Serial.print(emgCopy2); Serial.print(" ");
     Serial.print(emgCopy3); Serial.print(" ");
     Serial.print(emgCopy4); Serial.print(" ");
-    Serial.print(AccX1); Serial.print(" ");
-    Serial.print(AccY1); Serial.print(" ");
-    Serial.print(AccZ1); Serial.print(" ");
-    Serial.print(GyroX1); Serial.print(" ");
-    Serial.print(GyroY1); Serial.print(" ");
-    Serial.print(GyroZ1); Serial.print(" ");
-    Serial.print(AccX2); Serial.print(" ");
-    Serial.print(AccY2); Serial.print(" ");
-    Serial.print(AccZ2); Serial.print(" ");
-    Serial.print(GyroX2); Serial.print(" ");
-    Serial.print(GyroY2); Serial.print(" ");
-    Serial.println(GyroZ2);
+    Serial.print(AccX); Serial.print(" ");
+    Serial.print(AccY); Serial.print(" ");
+    Serial.print(AccZ); Serial.print(" ");
+    Serial.print(GyroX); Serial.print(" ");
+    Serial.print(GyroY); Serial.print(" ");
+    Serial.println(GyroZ);
   }
 }
