@@ -12,8 +12,6 @@ from multiprocessing import Process, Event, Manager, freeze_support
 import threading
 
 
-
-
 def record_sensor_data(data_buffer, stop_event, recording_enabled, filename, serial_port, baud_rate):
     """ Collect EMG and IMU data when recording is enabled. """
     ser = serial.Serial(serial_port, baud_rate, timeout=1)
@@ -55,109 +53,79 @@ def record_sensor_data(data_buffer, stop_event, recording_enabled, filename, ser
 def run_visual_guidance(data_buffer, stop_event, recording_enabled, filename, root):
     """ Run the visual guidance, controlling when sensor data is collected """
 
-
-    # ✅ 设定文件夹和文件路径
     image_folder = r"alpha"
-    excel_file = r"shuffle_order.xlsx"  # 存储顺序的 Excel 文件
-    csv_file = r"data_log.csv"  # 存储数据的 CSV 文件
-
-    # ✅ 获取所有 PNG 图片
     image_files = [f for f in os.listdir(image_folder) if f.endswith(".png")]
-    if not image_files:
-        print("❌ 没有找到 PNG 图片，请检查文件夹！")
-        exit()
+    label_dict = {chr(i + 65): i + 1 for i in range(26)}  # 65 是 'A' 的 ASCII 值
+    excel_file = os.path.join(root,"shuffle_order.xlsx")
+    # excel_file = r"data\FZH\shuffle_order.xlsx"  # 结果存储 Excel
+    image_map = {file: label_dict[file.split(".")[0]] for file in image_files if file.split(".")[0] in label_dict}
 
-    # ✅ 生成字母到数字的映射表 (A=1, B=2, ..., Z=26)
-    label_dict = {chr(i + 65): i + 1 for i in range(26)}
+    shuffled_images = random.sample(image_files, 26)  # Shuffle images len(image_files)
+    # shuffled_images = random.sample(image_files, 2)  
+    shuffled_labels = [image_map[file] for file in shuffled_images]
 
-    # ✅ **手动选择 1.png**
-    image_file = "A.png"
-    img_path = os.path.join(image_folder, image_file)
-
-    if not os.path.exists(img_path):
-        print(f"❌ 文件 {img_path} 不存在，请检查！")
-        exit()
-
-    # ✅ 获取图片对应的标签
-    letter = image_file.split(".")[0]
-    label = label_dict.get(letter, "UNKNOWN")
-
-    # ✅ 读取或创建 Excel 文件
+    # 读取或创建 Excel 文件
     if os.path.exists(excel_file):
-        df = pd.read_excel(excel_file, engine='openpyxl')
+        df = pd.read_excel(excel_file, engine='openpyxl')  # 需要 `openpyxl`
     else:
         df = pd.DataFrame()
 
-    # ✅ 记录当前的图片标签到 Excel
-    new_row = pd.DataFrame([[label]])
+    # 使用 `pd.concat()` 代替 `df.append()`
+    new_row = pd.DataFrame([shuffled_labels])  # 新的一行数据
     df = pd.concat([df, new_row], ignore_index=True)
+
+    # 保存到 Excel
     df.to_excel(excel_file, index=False, engine='openpyxl')
 
-    # ✅ 线程控制信号
-    stop_event = threading.Event()
-    recording_enabled = threading.Event()
-    data_buffer = []  # 数据缓冲区
-
-    # ✅ 读取并处理图片
-    img = cv2.imread(img_path, cv2.IMREAD_UNCHANGED)
-    if img is None or img.size == 0:
-        print(f"❌ 无法打开图片: {image_file}")
-        exit()
-
-    # ✅ 透明 PNG 处理（如果存在 Alpha 通道）
-    if img.shape[-1] == 4:
-        bgr = img[:, :, :3]
-        alpha = img[:, :, 3]  
-        white_bg = np.ones_like(bgr, dtype=np.uint8) * 255
-        alpha = alpha[:, :, np.newaxis] / 255.0
-        img = (bgr * alpha + white_bg * (1 - alpha)).astype(np.uint8)
-
-    # **🔴 PREPARE STAGE (2 秒)**
-    recording_enabled.clear()
-    print(f"[INFO] Prepare stage for: {image_file}")
-
-    start_time = time.time()
-    for countdown in range(2, 0, -1):
+    i = 0
+    for image_file in shuffled_images:
         if stop_event.is_set():
-            exit()
-        img_copy = img.copy()
-        cv2.putText(img_copy, f"Prepare: {countdown}", (50, 50), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
-        cv2.imshow("Visual Guidance", img_copy)
-        elapsed = time.time() - start_time
-        cv2.waitKey(max(1, int((2 - elapsed) * 1000 / countdown)))  # 确保倒计时稳定
-    cv2.waitKey(1)  # 立即刷新窗口
+            break
 
-    # **🟢 GO STAGE (5 秒, 开始记录)**
-    print(f"[INFO] Entering GO stage: {image_file}")
-    recording_enabled.set()
+        img_path = os.path.join(image_folder, image_file)
+        print(f"[INFO] Loading image: {img_path}")
 
-    start_time = time.time()
-    for countdown in range(5, 0, -1):
-        if stop_event.is_set():
-            exit()
-        img_copy = img.copy()
-        cv2.putText(img_copy, f"GO: {countdown}", (50, 50), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
-        cv2.imshow("Visual Guidance", img_copy)
-        elapsed = time.time() - start_time
-        cv2.waitKey(max(1, int((5 - elapsed) * 1000 / countdown)))  # 确保倒计时稳定
-    cv2.waitKey(1)  # 立即刷新窗口
+        img = cv2.imread(img_path, cv2.IMREAD_UNCHANGED)
+        if img is None or img.size == 0:
+            print(f"[WARNING] Unable to load image: {image_file}")
+            continue
 
-    # **📄 结束后写入 CSV 文件**
-    recording_enabled.clear()
-    print(f"[INFO] GO stage complete, flushing data to CSV file...")
+        # **PREPARE STAGE (No recording)**
+        recording_enabled.clear()
+        for countdown in range(5, 0, -1):
+            if stop_event.is_set():
+                return
+            img_copy = img.copy()
+            cv2.putText(img_copy, f"Prepare: {countdown}, No.{i}", (50, 50), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
+            cv2.imshow("Visual Guidance", img_copy)
+            cv2.waitKey(1000)
+        i+=1
+        # **GO STAGE (Start recording)**
+        print(f"[INFO] Entering GO stage: {image_file}")
+        recording_enabled.set()
 
-    if data_buffer:  # 确保有数据
-        print(f"[DEBUG] Writing {len(data_buffer)} rows to file: {csv_file}")
-        with open(csv_file, 'a', newline='') as csvfile:
-            writer = csv.writer(csvfile)
-            writer.writerows(list(data_buffer))
-        data_buffer[:] = []  # 清空缓冲区
+        for countdown in range(5, 0, -1):
+            if stop_event.is_set():
+                return
+            img_copy = img.copy()
+            cv2.putText(img_copy, f"GO: {countdown}", (50, 50), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
+            cv2.imshow("Visual Guidance", img_copy)
+            cv2.waitKey(1000)
 
-    cv2.destroyAllWindows()
-    stop_event.set()  # **停止进程**
+        # **END OF GO (Write buffered data)**
+        recording_enabled.clear()
+        print(f"[INFO] GO stage complete, flushing data to file")
 
+        if data_buffer:  # Ensure there's data before writing
+            print(f"[DEBUG] Writing {len(data_buffer)} rows to file: {filename}")  # Debugging print
+            with open(filename, 'a', newline='') as csvfile:
+                writer = csv.writer(csvfile)
+                writer.writerows(list(data_buffer))
+            data_buffer[:] = []  # Clear buffer after writing
 
+        cv2.destroyAllWindows()
 
+    stop_event.set()  # **Automatically stop all processes when visual guidance ends**
 
 if __name__ == '__main__':
     import serial.tools.list_ports
