@@ -116,7 +116,7 @@ def run_visual_guidance(data_buffer, stop_event, recording_enabled, filename, ro
         with open(filename, 'a', newline='') as csvfile:
             writer = csv.writer(csvfile)
             writer.writerows(list(data_buffer))
-            writer.writerow([0 for _ in range(10)])
+            writer.writerow([0 for _ in range(11)])
         data_buffer[:] = []  # 清空缓冲区
 
         time.sleep(2)  # 额外的休息时间，确保节奏稳定
