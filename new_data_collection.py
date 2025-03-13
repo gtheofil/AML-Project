@@ -52,7 +52,7 @@ def run_visual_guidance(data_buffer, stop_event, recording_enabled, filename, ro
     image_folder = r"alpha\gestures\alpha"
 
     # ✅ 检查 A.png 是否存在
-    image_file = "17.png"
+    image_file = "13.png"
     img_path = os.path.join(image_folder, image_file)
     if not os.path.exists(img_path):
         print(f"❌ 文件 {img_path} 不存在，请检查！")
