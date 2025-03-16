@@ -3,25 +3,32 @@ import json
 import asyncio
 import websockets
 
-# 1. 配置串口
-ser = serial.Serial('COM3', 115200, timeout=1)
+# 配置 Arduino 串口
+SERIAL_PORT = "COM4"  # 修改为你的 Arduino 端口
+BAUD_RATE = 115200
+
+# 连接串口
+ser = serial.Serial(SERIAL_PORT, BAUD_RATE, timeout=1)
 
 async def send_data():
-    async with websockets.connect("ws://localhost:8000/ws/arduino/") as websocket:
+    async with websockets.connect("ws://localhost:8000/ws/gesture/") as websocket:
         while True:
             line = ser.readline().decode('utf-8', errors='ignore').strip()
             if line:
                 parts = line.split()
-                if len(parts) == 7:
+                if len(parts) == 10:  # 确保数据完整
                     try:
                         data = {
-                            "emg": int(parts[0]),
-                            "acc": [int(parts[1]), int(parts[2]), int(parts[3])],
-                            "gyro": [int(parts[4]), int(parts[5]), int(parts[6])]
+                            "emg": list(map(int, parts[:4])),   # EMG 数据 (4通道)
+                            "acc": list(map(int, parts[4:7])),  # 加速度 (X, Y, Z)
+                            "gyro": list(map(int, parts[7:]))   # 角速度 (X, Y, Z)
                         }
+
+                        # 发送数据到 WebSocket
                         await websocket.send(json.dumps(data))
-                        print(f"Sent: {data}")  # 终端调试
+                        print(f"[INFO] 发送数据: {data}")
+
                     except ValueError:
-                        print(f"Invalid data received: {line}")
+                        print(f"[WARNING] 数据解析失败: {line}")
 
 asyncio.run(send_data())

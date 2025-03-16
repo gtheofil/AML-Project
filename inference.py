@@ -19,7 +19,7 @@ BAUD_RATE = 115200
 FILENAME = "sensor_data.csv"
 
 # **LSTM 模型**
-MODEL_PATH = "new_collect/fzh/rnn_emg_model.h5"
+MODEL_PATH = "new_collect/fzh/cnn_emg_model.h5"
 
 # **传感器数据格式 (EMG + IMU)**
 NUM_CHANNELS = 10  # 4 EMG + 6 IMU
@@ -34,9 +34,9 @@ scaler = StandardScaler()
 # **加载 LSTM 模型**
 if os.path.exists(MODEL_PATH):
     model = load_model(MODEL_PATH)
-    print("✅ LSTM Model loaded successfully!")
+    print(" LSTM Model loaded successfully!")
 else:
-    raise FileNotFoundError(f"❌ Model file not found at {MODEL_PATH}")
+    raise FileNotFoundError(f" Model file not found at {MODEL_PATH}")
 
 # **数据采集线程**
 def record_sensor_data():
@@ -44,10 +44,10 @@ def record_sensor_data():
     try:
         ser = serial.Serial(SERIAL_PORT, BAUD_RATE, timeout=1)
     except serial.SerialException as e:
-        print(f"❌ 串口错误: {e}")
+        print(f"串口错误: {e}")
         return
 
-    print(f"[INFO] ✅ 开始采集数据，存入: {FILENAME}")
+    print(f"[INFO] 开始采集数据，存入: {FILENAME}")
 
     with open(FILENAME, 'w', newline='') as csvfile:
         writer = csv.writer(csvfile)
@@ -69,14 +69,14 @@ def record_sensor_data():
                             data_buffer.append([elapsed_time] + emg_values + imu_values)
 
                         except ValueError:
-                            print(f"[WARNING] ❗ 数据解析失败: {line}")
+                            print(f"[WARNING]  数据解析失败: {line}")
 
-            print("[INFO] ✅ 数据采集完成")
+            print("[INFO] 数据采集完成")
         except KeyboardInterrupt:
-            print("\n[INFO] 🛑 手动停止数据采集")
+            print("\n[INFO] 手动停止数据采集")
         finally:
             ser.close()
-            print("[INFO] ✅ 串口已关闭")
+            print("[INFO] 串口已关闭")
 
 # **数据预处理线程**
 def data_preprocess():
@@ -86,16 +86,9 @@ def data_preprocess():
             time.sleep(0.1)  # 缓冲数据不足时等待
             continue
 
-        # 获取最新 5s 数据
         recent_data = list(data_buffer)[-WINDOW_SIZE:]
-
-        # 转换为 NumPy 数组 (1000, 10)
         data_array = np.array(recent_data)[:, 1:]  # 移除时间戳，只保留 EMG & IMU
-
-        # **归一化**
-        data_array = scaler.fit_transform(data_array)
-
-        # **构建滑动窗口**
+        # data_array = scaler.fit_transform(data_array)
         windows = []
         for start in range(0, WINDOW_SIZE - TIME_STEPS + 1, STRIDE):  # 1000-100+1，确保19个窗口
             windows.append(data_array[start:start + TIME_STEPS])  # (100, 10)
@@ -109,8 +102,6 @@ def data_preprocess():
         # 存入全局变量
         global processed_data
         processed_data = processed_windows
-
-        # print(f"[INFO] ✅ 预处理完成: {processed_windows.shape}")
 
         time.sleep(0.5)  # 0.5s 运行一次
 
@@ -130,9 +121,9 @@ def prediction():
         predictions = model.predict(input_data,verbose=0)
         predicted_label = np.argmax(predictions, axis=1)
 
-        print(f"🔮 预测结果: {predicted_label}")
+        print(f"预测结果: {predicted_label}")
 
-        time.sleep(0.1)  # 每 0.5s 预测一次
+        time.sleep(0.1)  
 
 # **启动多线程**
 def start_threads():
@@ -155,7 +146,7 @@ def start_threads():
 
 # **运行主程序**
 if __name__ == "__main__":
-    print("[INFO] 🚀 启动 EMG 识别系统")
+    print("[INFO] 启动 EMG 识别系统")
 
     # 启动线程
     threads = start_threads()
@@ -164,9 +155,9 @@ if __name__ == "__main__":
         while True:
             time.sleep(1)
     except KeyboardInterrupt:
-        print("\n[INFO] 🛑 终止所有线程...")
+        print("\n[INFO] 终止所有线程...")
         stop_event.set()
         for t in threads:
             t.join()
 
-    print("[INFO] ✅ 系统已安全关闭")
+    print("[INFO] 系统已安全关闭")
