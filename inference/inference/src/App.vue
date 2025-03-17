@@ -40,12 +40,11 @@ export default {
     const waveformData = ref([...Array(NUM_CHANNELS)].map(() => new Array(1000).fill(0)));
     let chartInstance = null;
 
-    // 🚀 修复手势图片路径，确保从 `public/assets/alpha/` 目录加载
     const gestureImage = ref(new URL("/src/assets/alpha/waiting.png", import.meta.url).href);
 
     watchEffect(() => {
       if (detectedGesture.value !== null) {
-        gestureImage.value = new URL(`/src/assets/alpha/${detectedGesture.value}.png`, import.meta.url).href;
+        gestureImage.value = new URL(`/assets/alpha/${detectedGesture.value}.png`, import.meta.url).href;
         console.log("🖼 Gesture image updated:", gestureImage.value);
       }
     });
@@ -119,14 +118,16 @@ export default {
 
     // 🚀 确保 Chart.js 重新绘制
     function updateChart() {
-      if (chartInstance) {
-        console.log("📊 Destroying old Chart.js instance...");
-        chartInstance.destroy(); // 先销毁旧的
-      }
+      if (!chartInstance) return;
+      console.log("📊 Updating Chart.js with new data...");
+      
+      chartInstance.data.datasets.forEach((dataset, i) => {
+        dataset.data = waveformData.value[i];  // 直接替换数据
+      });
 
-      console.log("📊 Reinitializing Chart.js...");
-      initChart(); // 重新初始化
+      chartInstance.update();  // 只更新，不销毁
     }
+
 
     return {
       gestureLabel,
