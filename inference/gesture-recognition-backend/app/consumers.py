@@ -56,7 +56,6 @@ class GestureRecognitionConsumer(AsyncWebsocketConsumer):
 
         # 转换成 NumPy 数组
         windows_array = np.array(windows)
-        print(f"[DEBUG] 滑动窗口 shape: {windows_array.shape}")
 
         # 确保形状匹配
         expected_shape = (NUM_WINDOWS, TIME_STEPS * NUM_CHANNELS)
@@ -77,6 +76,7 @@ class GestureRecognitionConsumer(AsyncWebsocketConsumer):
             "waveform": recent_data[-5000:].tolist(),  # 发送最近 5000ms 波形
             "highlight_range": [4000, 5000]  # 高亮最近 1s 数据
         }))
+        print('[INFO] send class', predicted_class)
 
     async def disconnect(self, close_code):
         print("[INFO] WebSocket 断开")
