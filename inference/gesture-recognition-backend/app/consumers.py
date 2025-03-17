@@ -56,13 +56,6 @@ class GestureRecognitionConsumer(AsyncWebsocketConsumer):
 
         # 转换成 NumPy 数组
         windows_array = np.array(windows)
-<<<<<<< HEAD
-=======
-<<<<<<< HEAD
-=======
-        print(f"[DEBUG] 滑动窗口 shape: {windows_array.shape}")
->>>>>>> aa4b51f8dd5c1a8b590def8e195c870de502108b
->>>>>>> 18739714a4ded4b4e436ebc486c8bbc1131280eb
 
         # 确保形状匹配
         expected_shape = (NUM_WINDOWS, TIME_STEPS * NUM_CHANNELS)
