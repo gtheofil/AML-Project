@@ -5,13 +5,13 @@ from channels.generic.websocket import AsyncWebsocketConsumer
 from tensorflow.keras.models import load_model
 
 # 加载 LSTM 预测模型
-MODEL_PATH = r"E:\MSC\Spring\AML\GestureLink\new_collect\fzh\cnn_emg_model.h5"
+MODEL_PATH = r"E:\MSC\AML\AML-Project\new_collect\fzh\cnn_emg_model.h5"
 model = load_model(MODEL_PATH)
 
 # **全局变量**
 data_buffer = deque(maxlen=5000)  # 5秒数据缓存
 TIME_STEPS = 100  # LSTM 输入时间步长
-STRIDE = 272  # 计算合适的滑动窗口步长
+STRIDE = 250  # 调整滑动窗口步长以匹配 NUM_WINDOWS
 NUM_CHANNELS = 10  # 4 EMG + 6 IMU
 NUM_WINDOWS = (5000 - TIME_STEPS) // STRIDE + 1  # 自动计算窗口数量
 
@@ -20,8 +20,10 @@ class GestureRecognitionConsumer(AsyncWebsocketConsumer):
         await self.accept()
         print("[INFO] WebSocket 连接已建立")
 
-    async def receive(self, text_data):
+    async def receive(self, text_data=None):
         """ 接收 Arduino 传感器数据, 存入 buffer """
+        if text_data is None:
+            return
         try:
             data = json.loads(text_data)
             emg_values = list(map(int, data.get("emg", [])))  # 4 通道 EMG
@@ -56,6 +58,7 @@ class GestureRecognitionConsumer(AsyncWebsocketConsumer):
 
         # 转换成 NumPy 数组
         windows_array = np.array(windows)
+        print(f"[DEBUG] 滑动窗口 shape: {windows_array.shape}")
 
         # 确保形状匹配
         expected_shape = (NUM_WINDOWS, TIME_STEPS * NUM_CHANNELS)
@@ -64,19 +67,27 @@ class GestureRecognitionConsumer(AsyncWebsocketConsumer):
             return
 
         # 进行 reshape
-        processed_windows = windows_array.reshape(1, NUM_WINDOWS, TIME_STEPS * NUM_CHANNELS)
+        try:
+            processed_windows = windows_array.reshape(1, NUM_WINDOWS, TIME_STEPS * NUM_CHANNELS)
+        except ValueError as e:
+            print(f"[ERROR] 维度错误: {e}, windows.shape={windows_array.shape}")
+            return
 
         # 运行预测
         predictions = model.predict(processed_windows, verbose=0)
         predicted_class = int(np.argmax(predictions, axis=1))
 
+        print(f"[DEBUG] 预测结果: {predicted_class}")
+
         # 发送分类结果 & 波形
-        await self.send(json.dumps({
-            "gesture": predicted_class,
-            "waveform": recent_data[-5000:].tolist(),  # 发送最近 5000ms 波形
-            "highlight_range": [4000, 5000]  # 高亮最近 1s 数据
-        }))
-        print('[INFO] send class', predicted_class)
+        try:
+            await self.send(json.dumps({
+                "gesture": predicted_class,
+                "waveform": recent_data[-5000:].tolist(),  # 发送最近 5000ms 波形
+                "highlight_range": [4000, 5000]  # 高亮最近 1s 数据
+            }))
+        except Exception as e:
+            print(f"[ERROR] WebSocket 发送失败: {e}")
 
     async def disconnect(self, close_code):
         print("[INFO] WebSocket 断开")

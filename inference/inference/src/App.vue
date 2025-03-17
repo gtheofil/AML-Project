@@ -111,7 +111,7 @@ export default {
           animation: false,
           scales: {
             x: { display: false },
-            y: { beginAtZero: true, min: 0, max: 100 },
+            y: { beginAtZero: true, min: 0, max: 1500},
           },
         },
       });
