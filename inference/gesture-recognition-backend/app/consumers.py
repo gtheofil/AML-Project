@@ -5,7 +5,7 @@ from channels.generic.websocket import AsyncWebsocketConsumer
 from tensorflow.keras.models import load_model
 
 # 加载 LSTM 预测模型
-MODEL_PATH = r"E:\MSC\Spring\AML\GestureLink\new_collect\fzh\cnn_emg_model.h5"
+MODEL_PATH = r"E:\MSC\AML\AML-Project\new_collect\fzh\cnn_emg_model.h5"
 model = load_model(MODEL_PATH)
 
 # **全局变量**
@@ -56,6 +56,10 @@ class GestureRecognitionConsumer(AsyncWebsocketConsumer):
 
         # 转换成 NumPy 数组
         windows_array = np.array(windows)
+<<<<<<< HEAD
+=======
+        print(f"[DEBUG] 滑动窗口 shape: {windows_array.shape}")
+>>>>>>> aa4b51f8dd5c1a8b590def8e195c870de502108b
 
         # 确保形状匹配
         expected_shape = (NUM_WINDOWS, TIME_STEPS * NUM_CHANNELS)

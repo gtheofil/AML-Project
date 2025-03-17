@@ -3,10 +3,16 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
+<<<<<<< HEAD
     "serve": "vue-cli-service serve",
     "build": "vue-cli-service build",
     "lint": "vue-cli-service lint",
     "dev" : "vue-cli-service serve"
+=======
+  "dev": "vite",
+  "build": "vite build",
+  "serve": "vite preview"
+>>>>>>> aa4b51f8dd5c1a8b590def8e195c870de502108b
   },
   "dependencies": {
     "chart.js": "^4.4.8",
