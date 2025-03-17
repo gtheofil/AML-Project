@@ -4,6 +4,12 @@
     <p>
       Current Gesture: <strong>{{ gestureLabel }}</strong>
     </p>
+
+    <!-- Gesture Image Display -->
+    <div class="gesture-image">
+      <img :src="gestureImage" alt="Recognized Gesture" />
+    </div>
+
     <div class="chart-wrapper">
       <div class="chart-container">
         <canvas ref="waveformChart"></canvas>
@@ -13,7 +19,7 @@
 </template>
 
 <script>
-import { ref, onMounted, watchEffect, nextTick } from "vue";
+import { ref, onMounted, watchEffect, nextTick, computed } from "vue";
 import { setWebSocketListener } from "./websocket";
 import Chart from "chart.js/auto";
 
@@ -21,15 +27,25 @@ export default {
   setup() {
     const NUM_CHANNELS = 10; // 4 EMG + 6 IMU
     const waveformChart = ref(null);
-    const gestureLabel = ref("Waiting for data...");
+    const gestureLabel = ref("Waiting...");
+    const detectedGesture = ref(null); // Store detected gesture index
     const waveformData = ref([...Array(NUM_CHANNELS)].map(() => new Array(1000).fill(0))); // 10 channels, 1000ms each
     let chartInstance = null;
+
+    // Compute the gesture image dynamically
+    const gestureImage = computed(() => {
+      if (detectedGesture.value === null) {
+        return new URL("./assets/alpha/waiting.png", import.meta.url).href; // Show waiting.png by default
+      }
+      return new URL(`./assets/alpha/${detectedGesture.value + 1}.png`, import.meta.url).href;
+    });
 
     // Initialize WebSocket listener
     onMounted(() => {
       setWebSocketListener((data) => {
+        detectedGesture.value = data.gesture; // Store gesture index
         gestureLabel.value = `Gesture ${data.gesture}`;
-        
+
         // Ensure all 10 channels are updated
         if (data.waveform.length === NUM_CHANNELS * 1000) {
           for (let i = 0; i < NUM_CHANNELS; i++) {
@@ -45,36 +61,41 @@ export default {
     });
 
     function initChart() {
-      if (!waveformChart.value) return;
-      const ctx = waveformChart.value.getContext("2d");
+  if (!waveformChart.value) return;
+  const ctx = waveformChart.value.getContext("2d");
 
-      const colors = [
-        "red", "blue", "green", "purple", "orange", "pink", "brown", "cyan", "magenta", "black"
-      ]; // Unique colors for each channel
+  const colors = [
+    "red", "blue", "green", "purple", "orange", "pink", "brown", "cyan", "magenta", "black"
+  ]; // Unique colors for each channel
 
-      chartInstance = new Chart(ctx, {
-        type: "line",
-        data: {
-          labels: Array.from({ length: 1000 }, (_, i) => i),
-          datasets: waveformData.value.map((data, i) => ({
-            label: `Channel ${i + 1}`,
-            data: data,
-            borderColor: colors[i % colors.length],
-            borderWidth: 1.5,
-            pointRadius: 0, // Smooth line without dots
-          })),
+  chartInstance = new Chart(ctx, {
+    type: "line",
+    data: {
+      labels: Array.from({ length: 1000 }, (_, i) => i),
+      datasets: waveformData.value.map((data, i) => ({
+        label: `Channel ${i + 1}`,
+        data: data,
+        borderColor: colors[i % colors.length],
+        borderWidth: 1.5,
+        pointRadius: 0, // Smooth line without dots
+      })),
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false, // Allow flexible resizing
+      animation: false, // Reduce latency
+      scales: {
+        x: { display: false },
+        y: { 
+          beginAtZero: true, 
+          min: 0, // Set Y-axis minimum
+          max: 1000, // Set Y-axis maximum to 1000
         },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false, // Allow flexible resizing
-          animation: false, // Reduce latency
-          scales: {
-            x: { display: false },
-            y: { beginAtZero: true },
-          },
-        },
-      });
-    }
+      },
+    },
+  });
+}
+
 
     // Automatically update chart when waveformData changes
     watchEffect(() => {
@@ -89,6 +110,7 @@ export default {
     return {
       gestureLabel,
       waveformChart,
+      gestureImage,
     };
   },
 };
@@ -139,5 +161,19 @@ body {
   justify-content: center;
   align-items: center;
   padding: 15px;
+}
+
+/* Gesture Image Display */
+.gesture-image {
+  margin: 20px 0;
+}
+
+.gesture-image img {
+  width: 150px; /* Adjust image size */
+  height: 150px;
+  object-fit: contain;
+  border: 2px solid #007bff;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 </style>
