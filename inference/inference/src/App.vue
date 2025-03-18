@@ -37,18 +37,23 @@ export default {
     const gestureLabel = ref("Waiting...");
     const detectedGesture = ref(null);
     const wsStatus = ref("🔴 Disconnected");
-    const waveformData = ref([...Array(NUM_CHANNELS)].map(() => new Array(1000).fill(0)));
+    const waveformData = ref([...Array(NUM_CHANNELS)].map(() => new Array(5000).fill(0)));  // 10 channels, 5000 data points
     let chartInstance = null;
+    const gestureImage = ref("/assets/alpha/waiting.png");
 
-    const gestureImage = ref(new URL("/src/assets/alpha/waiting.png", import.meta.url).href);
-
+    // 使用 watchEffect 确保图片路径更新
     watchEffect(() => {
       if (detectedGesture.value !== null) {
-        gestureImage.value = new URL(`/assets/alpha/${detectedGesture.value}.png`, import.meta.url).href;
-        console.log("🖼 Gesture image updated:", gestureImage.value);
+        import(`@/assets/alpha/${detectedGesture.value}.png`)
+          .then((module) => {
+            gestureImage.value = module.default;  // 图片路径
+            console.log("🖼 Gesture image updated:", gestureImage.value);
+          })
+          .catch((err) => {
+            console.error("Error loading image:", err);
+          });
       }
     });
-
 
     // 🚀 初始化 WebSocket 连接
     onMounted(() => {
@@ -67,19 +72,19 @@ export default {
         gestureLabel.value = `Gesture ${data.gesture}`;
         wsStatus.value = "🟢 Connected";
 
-        // 🚀 确保 waveformData 变化能触发 Vue 响应式
-        waveformData.value = [...Array(NUM_CHANNELS)].map((_, i) =>
-          [...data.waveform.slice(i * 1000, (i + 1) * 1000)]
-        );
+        // 确保 waveformData 变化能触发 Vue 响应式
+        // 假设 WebSocket 数据是按每个通道的 5000 个数据传递
+        waveformData.value = data.waveform.map((channelData) => {
+          // 处理每个通道的 5000 个数据点
+          return channelData.slice(0, 5000);  // 确保每个通道的数据长度是 5000
+        });
 
         console.log("📊 Updated waveformData:", JSON.parse(JSON.stringify(waveformData.value)));
-
-        // **确保 Chart.js 重新绘制**
-        updateChart();
+        updateChart();  // 更新图表
       });
 
       nextTick(() => {
-        initChart();
+        initChart();  // 初始化图表
       });
     });
 
@@ -95,11 +100,11 @@ export default {
       chartInstance = new Chart(ctx, {
         type: "line",
         data: {
-          labels: Array.from({ length: 1000 }, (_, i) => i),
+          labels: Array.from({ length: 5000 }, (_, i) => i), // X轴表示5000个数据点
           datasets: waveformData.value.map((data, i) => ({
             label: `Channel ${i + 1}`,
             data: data,
-            borderColor: colors[i % colors.length],
+            borderColor: colors[i % colors.length], // 为每个通道设置不同的颜色
             borderWidth: 1.5,
             pointRadius: 0,
           })),
@@ -109,8 +114,21 @@ export default {
           maintainAspectRatio: false,
           animation: false,
           scales: {
-            x: { display: false },
-            y: { beginAtZero: true, min: 0, max: 1500},
+            x: { 
+              title: {
+                display: true,
+                text: 'Time Steps'
+              }
+            },
+            y: {
+              beginAtZero: true,
+              min: -30000,
+              max: 30000,  // 根据你的数据范围调整最大值
+              title: {
+                display: true,
+                text: 'Signal Value'
+              }
+            },
           },
         },
       });
@@ -120,14 +138,14 @@ export default {
     function updateChart() {
       if (!chartInstance) return;
       console.log("📊 Updating Chart.js with new data...");
-      
+
+      // 确保每个通道的数据在图表中更新
       chartInstance.data.datasets.forEach((dataset, i) => {
-        dataset.data = waveformData.value[i];  // 直接替换数据
+        dataset.data = waveformData.value[i];  // 更新数据
       });
 
-      chartInstance.update();  // 只更新，不销毁
+      chartInstance.update();  // 只更新数据，不销毁
     }
-
 
     return {
       gestureLabel,

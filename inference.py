@@ -144,7 +144,7 @@ def record_sensor_data():
 
 # **数据预处理线程**
 def data_preprocess():
-    """ 每 0.2s 读取 5s 数据，并进行窗口化处理 """
+    """ 每 0.1s 读取 5s 数据，并进行窗口化处理 """
     while not stop_event.is_set():
         if len(data_buffer) < WINDOW_SIZE:
             time.sleep(0.1)  # 缓冲数据不足时等待
@@ -188,7 +188,7 @@ def prediction():
         predicted_label = np.argmax(predictions, axis=1)
         print(f"prediction result: {predicted_label}")
 
-        time.sleep(0.1)  
+        # time.sleep(0.1)  
 
 # **启动多线程**
 def start_threads():

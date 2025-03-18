@@ -62,9 +62,6 @@ class GestureRecognitionConsumer(AsyncWebsocketConsumer):
 
         # 确保形状匹配
         expected_shape = (NUM_WINDOWS, TIME_STEPS * NUM_CHANNELS)
-        if windows_array.shape != expected_shape:
-            print(f"[ERROR] 数据尺寸不匹配, 当前: {windows_array.shape}, 期望: {expected_shape}")
-            return
 
         # 进行 reshape
         try:
