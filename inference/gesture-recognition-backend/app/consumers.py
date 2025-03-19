@@ -12,13 +12,14 @@ data_buffer = deque(maxlen=5000)  # 5秒数据缓存
 TIME_STEPS = 100  # LSTM 输入时间步长
 STRIDE = 50  # 计算滑动窗口步长，每50ms一次
 NUM_CHANNELS = 10  # 4 EMG + 6 IMU
-NUM_WINDOWS = (5000 - TIME_STEPS) // STRIDE + 1  # 计算窗口数量
+NUM_WINDOWS = (1000 - TIME_STEPS) // STRIDE + 1  # 计算窗口数量
 scaler = StandardScaler()
 
 # **LSTM 模型路径更新**
-MODEL_PATH = r"E:\MSC\Spring\AML\GestureLink\weights\cnn_emg_model_all_channels.h5"  # 更新为正确的模型路径
+MODEL_PATH = r"E:\MSC\AML\AML-Project\weights\cnn_emg_model_emg.h5"  # 更新为正确的模型路径
 model = load_model(MODEL_PATH)
 def detect_action(X):
+    # print(X.shape)
     if np.max(X[:,0:6,:,8])>5000 or np.max(X[:,0:6,:,9])>5000:
         return True
     else:
@@ -109,7 +110,8 @@ class GestureRecognitionConsumer(AsyncWebsocketConsumer):
             return
 
         # 获取最近 5s 数据
-        recent_data = np.array(list(data_buffer)[-5000:])  # (5000, 10)
+        recent_data = np.array(list(data_buffer)[-1000:])  # (5000, 10)
+        recent_data_o = np.array(list(data_buffer)[-5000:])  # (5000, 10)
         # scaled_data = scaler.fit_transform(recent_data)  # 归一化
 
         # 滑动窗口处理
@@ -120,8 +122,8 @@ class GestureRecognitionConsumer(AsyncWebsocketConsumer):
 
         # 转换成 NumPy 数组
         windows_array = np.array(windows)
-        flag = detect_action(windows_array)
-        print(f"[DEBUG] 滑动窗口 shape: {windows_array.shape}")
+        
+        # print(f"[DEBUG] 滑动窗口 shape: {windows_array.shape}")
 
         # 确保形状匹配
         expected_shape = (NUM_WINDOWS, TIME_STEPS * NUM_CHANNELS)
@@ -132,24 +134,27 @@ class GestureRecognitionConsumer(AsyncWebsocketConsumer):
         # 进行 reshape
         try:
             processed_windows = windows_array.reshape(1, NUM_WINDOWS, TIME_STEPS * NUM_CHANNELS)
+            processed_windows_original = processed_windows.reshape(1, NUM_WINDOWS, TIME_STEPS, NUM_CHANNELS)
+            flag = detect_action(processed_windows_original)
         except ValueError as e:
             print(f"[ERROR] 维度错误: {e}, windows.shape={windows_array.shape}")
             return
 
         # 替换 EMG 数据为合成数据
-        processed_windows = replace_emg_with_synthetic_data(processed_windows, fs=1000)
+        processed_windows = replace_emg_with_synthetic_data(processed_windows_original, fs=1000)
 
+        processed_windows = processed_windows.reshape(1, NUM_WINDOWS, TIME_STEPS * NUM_CHANNELS)
         # 运行预测
         predictions = model.predict(processed_windows, verbose=0)
         predicted_class = int(np.argmax(predictions, axis=1))
 
         print(f"[DEBUG] 预测结果: {predicted_class+1}")
-
+        flag = True
         if flag:# 发送分类结果 & 波形
             try:
                 await self.send(json.dumps({
                     "gesture": predicted_class,
-                    "waveform": recent_data[-5000:].transpose().tolist(),  # 发送最近 5000ms 波形
+                    "waveform": recent_data_o[-5000:].transpose().tolist(),  # 发送最近 5000ms 波形
                     "highlight_range": [4000, 5000]  # 高亮最近 1s 数据
                 }))
             except Exception as e:

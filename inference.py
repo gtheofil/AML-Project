@@ -13,7 +13,7 @@ data_buffer = deque(maxlen=5000)  # 5s 数据缓存
 stop_event = threading.Event()
 
 # **串口配置**
-SERIAL_PORT = "COM4"  # 修改为 Arduino 端口
+SERIAL_PORT = "COM3"  # 修改为 Arduino 端口
 BAUD_RATE = 115200
 FILENAME = "sensor_data.csv"
 
@@ -28,7 +28,7 @@ TIME_STEPS = 100  # LSTM 期望的 time_steps
 NUM_WINDOWS = 19  # 计算得到的时间窗口数量
 
 FEATURE = True
-EMG = False
+EMG = True
 
 CHOSSEN_CHANNELS = 4 if EMG else 10
 MODEL_PATH = "weights/cnn_emg_model_emg.h5" if EMG else "weights/cnn_emg_model_all_channels.h5"
@@ -158,14 +158,17 @@ def data_preprocess():
             windows.append(data_array[start:start + TIME_STEPS])  # (100, 10)
         
         windows = np.array(windows)
-        flag = detect_action(windows)
-        global FLAG 
-        FLAG = flag
+        
         processed_windows = windows.reshape(1, NUM_WINDOWS, TIME_STEPS * NUM_CHANNELS)
+        processed_windows_original = processed_windows.reshape(1, NUM_WINDOWS, TIME_STEPS,  NUM_CHANNELS)
         if FEATURE:
-            processed_windows = replace_emg_with_synthetic_data(processed_windows, fs=1000)
+            processed_windows = replace_emg_with_synthetic_data(processed_windows_original, fs=1000)
+            flag = detect_action(processed_windows_original)
+            global FLAG 
+            FLAG = flag
+            
         global processed_data
-        processed_data = processed_windows
+        processed_data = processed_windows.reshape(1, NUM_WINDOWS, TIME_STEPS * NUM_CHANNELS)
 
         time.sleep(0.2)  # 0.2s 运行一次
 

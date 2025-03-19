@@ -4,7 +4,7 @@ import asyncio
 import websockets
 
 # 配置 Arduino 串口
-SERIAL_PORT = "COM4"  # 修改为你的 Arduino 端口
+SERIAL_PORT = "COM3"  # 修改为你的 Arduino 端口
 BAUD_RATE = 115200
 
 # 连接串口

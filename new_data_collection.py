@@ -137,10 +137,10 @@ if __name__ == '__main__':
     stop_event = Event()
     recording_enabled = Event()
     
-    SERIAL_PORT = 'COM4'  # 确保端口正确
+    SERIAL_PORT = 'COM3'  # 确保端口正确
     BAUD_RATE = 115200
 
-    data_dir = r"new_collect\gza"
+    data_dir = r"new_collect\wxr"
     os.makedirs(data_dir, exist_ok=True)
 
     existing_files = [f for f in os.listdir(data_dir) if f.startswith("sensor_data") and f.endswith(".csv")]
