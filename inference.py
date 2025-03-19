@@ -31,7 +31,7 @@ FEATURE = True
 EMG = True
 
 CHOSSEN_CHANNELS = 4 if EMG else 10
-MODEL_PATH = "weights/cnn_emg_model_emg.h5" if EMG else "weights/cnn_emg_model_all_channels.h5"
+MODEL_PATH = "weights/cnn_emg_model_all_1.h5" if EMG else "weights/cnn_emg_model_all_channels.h5"
 # **归一化**
 scaler = StandardScaler()
 
@@ -43,7 +43,7 @@ else:
     raise FileNotFoundError(f" Model file not found at {MODEL_PATH}")
 
 def detect_action(X):
-    if np.max(X[:,0:6,:,8])>5000 or np.max(X[:,0:6,:,9])>5000:
+    if np.max(X[:,1:4,:,8])>5000 or np.max(X[:,1:4,:,9])>5000:
         return True
     else:
         return False
@@ -189,7 +189,7 @@ def prediction():
         # **进行预测**
         predictions = model.predict(input_data,verbose=0)
         predicted_label = np.argmax(predictions, axis=1)
-        print(f"prediction result: {predicted_label}")
+        print(f"prediction result: {predicted_label+1}")
 
         # time.sleep(0.1)  
 

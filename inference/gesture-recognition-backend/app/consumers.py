@@ -65,7 +65,7 @@ def replace_emg_with_synthetic_data(X, fs=1000):
 
     for i in range(num_samples):
         for j in range(num_windows):
-            for ch in range(10):  # 替换前 4 个 EMG 通道
+            for ch in range(4):  # 替换前 4 个 EMG 通道
                 features = extract_emg_features(X[i, j, :, ch], fs)
                 new_X[i, j, :, ch] = synthesize_time_series(features, num_timesteps)
 
@@ -153,8 +153,8 @@ class GestureRecognitionConsumer(AsyncWebsocketConsumer):
         if flag:# 发送分类结果 & 波形
             try:
                 await self.send(json.dumps({
-                    "gesture": predicted_class,
-                    "waveform": recent_data_o[-5000:].transpose().tolist(),  # 发送最近 5000ms 波形
+                    "gesture": predicted_class+1,
+                    "waveform": np.ones_like(recent_data_o[-5000:].transpose()).tolist(),  # 发送最近 5000ms 波形
                     "highlight_range": [4000, 5000]  # 高亮最近 1s 数据
                 }))
             except Exception as e:

@@ -52,7 +52,7 @@ def run_visual_guidance(data_buffer, stop_event, recording_enabled, filename, ro
     image_folder = r"alpha\gestures\alpha"
 
     # ✅ 检查 A.png 是否存在
-    image_file = "25.png"
+    image_file = "24.png"
     img_path = os.path.join(image_folder, image_file)
     if not os.path.exists(img_path):
         print(f"❌ 文件 {img_path} 不存在，请检查！")
@@ -140,7 +140,7 @@ if __name__ == '__main__':
     SERIAL_PORT = 'COM3'  # 确保端口正确
     BAUD_RATE = 115200
 
-    data_dir = r"new_collect\wxr"
+    data_dir = r"new_collect\fzh"
     os.makedirs(data_dir, exist_ok=True)
 
     existing_files = [f for f in os.listdir(data_dir) if f.startswith("sensor_data") and f.endswith(".csv")]
